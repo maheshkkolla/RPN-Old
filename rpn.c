@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <string.h>
+#include "queue.h"
 
 // int evaluate(char *expression) {
 // 	Stack stack = createStack();
@@ -33,6 +34,20 @@
 // 	}
 // 	return answer;
 // }
+
+
+int isOperand(char *token){
+	return(*token >= '0' && *token <= '9');
+}
+
+int isOperator(char *token){
+	int i, operatorFlag = 0;
+	char *allOperators = "+-*/^()";
+	for (i = 0; i < strlen(allOperators); ++i) {
+		(*token == allOperators[i])  && (operatorFlag = 1);
+	}
+	return operatorFlag;
+}
 
 void stringAtIndex(char *expression,char **token, int index) {
 	*token = malloc(sizeof(char)*2); 
@@ -67,7 +82,7 @@ int calculate(char *operator, int *operands){
 void performOperations(char *c, Stack *stack) {
 	int *answer = malloc(sizeof(int));
 	int *operands;
-	if(*c >= '0' && *c <= '9'){
+	if(isOperand(c)){
 		pushOperand(stack,c);	
 	} else if(!isspace(*c)){
 		operands = popTwoOperands(stack);
@@ -86,21 +101,12 @@ int countOfOperands(char *expression) {
 	return count;
 }
 
-int arrayIndexOf(char token, char *array) {
-	int index = -1, i;
-	for (i = 0; i < strlen(array); ++i) {
-		(token == array[i]) && (index = i);
-	}
-	return index;
-}
-
 int countOfOperators(char *expression) {
 	int i, count = 0;
-	char *allOperators = "+-*/";
 	for (i = 0; i < strlen(expression); ++i) {
 		char *token;
 		stringAtIndex(expression, &token, i);
-		(arrayIndexOf(token[0], allOperators) >= 0) && count++;
+		(isOperator(token)) && count++;
 	}
 	return count;
 }
@@ -125,4 +131,77 @@ Status evaluate(char *expression) {
 	}
 	status.result = *(int *)pop(&stack);
 	return status;
+}
+
+void insertOperatorsInStackToQueue(Stack *stack, Queue *outputQueue) {
+	// int i;
+	// for (i = 0; i < stack->count; ++i) {
+	// 	enQueue(outputQueue, pop(stack));
+	// }
+	while(stack->top != NULL){
+		enQueue(outputQueue, pop(stack));
+	}
+}
+
+void queueToString(Queue *outputQueue, char *expression) {
+	while(outputQueue->head != NULL){
+		strcat(expression, (char *)deQueue(outputQueue));
+		if(outputQueue->head != NULL)strcat(expression," ");
+	}
+}
+
+int arrayIndexOf(char *array, char *token) {
+	int i;
+	for (i = 0; i < strlen(array); ++i) {
+		if(token[0] == array[i]) return i;
+	}
+	return -1;
+}
+
+void pushOperator(Stack *stack, char *token, Queue *queue) {
+	char *operators = ")-+*/^\0";
+	char *precedence = "011223\0";
+	if(stack->top == NULL) push(stack, token);
+	else {
+		printf("-------Top is Not Null\n");
+		printf("-------Precedence of token %c is %d ",token[0],precedence[arrayIndexOf(operators,token)]-48);
+		printf("-------Precedence of top stack %s is %d ",stack->top->data,precedence[arrayIndexOf(operators,stack->top->data)]-48);
+		if(token[0] == '('){
+			push(stack,token);
+		} else {
+			if(precedence[arrayIndexOf(operators,token)]-48 > precedence[arrayIndexOf(operators,stack->top->data)]-48) {
+				printf("-------Inside If pushing to stack\n");
+				push(stack, token);
+			} else{
+				printf("Inside else \n");
+				while(precedence[arrayIndexOf(operators,token)]-48 <= precedence[arrayIndexOf(operators,stack->top->data)]-48){
+					printf("---------Poping the Stack\n");
+					printf("stack Top--> %s\n", stack->top->data);
+					enQueue(queue, pop(stack));
+					if(stack->top == NULL) break;
+				}
+				if(token[0] == ')'){
+					pop(stack);
+				} else push(stack,token);
+			}
+		}
+	}	
+}
+
+char *infixToPostfix(char * expression) {
+	int i;
+	char *outputExpression = calloc(sizeof(char),strlen(expression));
+	Queue outputQueue = createQueue();
+	Stack stack = createStack();
+	for (i = 0; i < strlen(expression); ++i) {
+		char *token;
+		stringAtIndex(expression, &token, i);
+		printf("--------Expression token %s\n", token);
+		if(isOperand(token)) enQueue(&outputQueue, token);
+		if(isOperator(token)) pushOperator(&stack, token, &outputQueue);
+	}
+	insertOperatorsInStackToQueue(&stack,&outputQueue);
+	queueToString(&outputQueue, outputExpression);
+	printf("-------->[%s]\n",outputExpression);
+	return outputExpression;
 }

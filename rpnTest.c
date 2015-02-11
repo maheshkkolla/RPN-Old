@@ -1,5 +1,7 @@
 #include "rpn.h"
 #include "expr_assert.h"
+#include <stdio.h>
+#include <string.h>
 
 void test_evaluate_function_should_return_the_answer_of_the_add_expression(){
 	char *expression = "2 3 +\0";
@@ -50,4 +52,16 @@ void test_evaluate_should_gives_the_error_if_there_is_more_operators_than_operan
 	char *expression = "2 2 + +";
 	Status status = evaluate(expression);
 	assertEqual(status.error, 1);
+}
+
+void test_infixToPostfix_takes_the_simple_infix_expression_and_gives_as_postfix_expression() {
+	char *expression = "3 + 4";
+	char *postfixExpression = infixToPostfix(expression);
+	assertEqual(strcmp(postfixExpression, "3 4 +"),0);
+}
+
+void test_infixToPostfix_takes_the_infix_expression_and_gives_as_postfix_expression() {
+	char *expression = "3 + 4 * 2 / ( 1 - 5 ) ";
+	char *postfixExpression = infixToPostfix(expression);
+	assertEqual(strcmp(postfixExpression, "3 4 2 * 1 5 - / +"),0);
 }

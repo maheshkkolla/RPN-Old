@@ -6,3 +6,4 @@ struct status {
 };
 
 Status evaluate(char *expression);
+char * infixToPostfix(char * expression);
